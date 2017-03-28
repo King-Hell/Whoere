@@ -8,6 +8,8 @@ import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.AppCompatActivity;
 import android.view.MenuItem;
 
+import com.tencent.TIMManager;
+
 public class MainActivity extends AppCompatActivity implements SettingFragment.OnFragmentInteractionListener, ChatFragment.OnFragmentInteractionListener {
 
     private ChatFragment chatFragment;
@@ -54,6 +56,7 @@ public class MainActivity extends AppCompatActivity implements SettingFragment.O
         BottomNavigationView navigation = (BottomNavigationView) findViewById(R.id.navigation);
         navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
         setDefaultFragment();
+        TIMManager.getInstance();
     }
 
     private void setDefaultFragment() {
