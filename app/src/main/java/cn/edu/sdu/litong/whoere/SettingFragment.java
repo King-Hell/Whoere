@@ -8,6 +8,19 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.EditText;
+import android.widget.Toast;
+
+import java.io.BufferedInputStream;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.ObjectOutputStream;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.net.InetAddress;
+import java.net.Socket;
 
 
 /**
@@ -31,6 +44,17 @@ public class SettingFragment extends Fragment {
     private OnFragmentInteractionListener mListener;
     private Button buttonLogin;
     private Button buttonLogout;
+    private EditText editTextName;
+    private EditText editTextPassword;
+
+    private Socket socket = null;
+    private ObjectOutputStream os = null;
+    private BufferedReader in = null;
+    private PrintWriter out = null;
+    private String data;
+
+    private String username;
+    private String password;
 
     public SettingFragment() {
         // Required empty public constructor
@@ -72,11 +96,60 @@ public class SettingFragment extends Fragment {
         View view = inflater.inflate(R.layout.fragment_setting, container, false);
         buttonLogin = (Button) view.findViewById(R.id.button_login);
         buttonLogout = (Button) view.findViewById(R.id.button_logout);
+        editTextName = (EditText) view.findViewById(R.id.editText3);
+        editTextPassword = (EditText) view.findViewById(R.id.editText5);
+        buttonLogout.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View v) {
+                out.println("BYE");
+                MainActivity.isLogin=false;
+                buttonLogout.setEnabled(false);
+                buttonLogin.setEnabled(true);
+            }
+        });
         buttonLogin.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                buttonLogout.setEnabled(true);
-                buttonLogin.setEnabled(false);
+                if (MainActivity.isLogin == true) {
+                    Toast.makeText(getContext(), "请勿重复登录", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                try {
+                    username = editTextName.getText().toString();
+                    password = editTextPassword.getText().toString();
+                    socket = new Socket(InetAddress.getByName("kinghell.cn"), 49400);
+
+                    in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                    out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())), true);
+                    out.println("LOGIN");
+                    while ((data = in.readLine()) != null) {
+                        if (data.equals("LOGIN_YES")) {
+                            os = new ObjectOutputStream(socket.getOutputStream());
+                            MainActivity.account = new Account(username, password);
+                            Account account = MainActivity.account;
+                            os.writeObject(account);
+                            os.flush();
+                            break;
+                        }
+                    }
+                    while ((data = in.readLine()) != null) {
+                        if (data.equals("ACCOUNT_YES")) {
+                            Toast.makeText(getContext(), "登录成功", Toast.LENGTH_LONG).show();
+                            MainActivity.isLogin=true;
+                        } else if (data.equals("ACCOUNT_NO")) {
+                            Toast.makeText(getContext(), "密码错误或未找到该用户", Toast.LENGTH_LONG).show();
+                        }else{
+                            Toast.makeText(getContext(), "网络错误，登录失败", Toast.LENGTH_LONG).show();
+                        }
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                if(MainActivity.isLogin==true){
+                    buttonLogout.setEnabled(true);
+                    buttonLogin.setEnabled(false);
+                }
+
             }
         });
         return view;

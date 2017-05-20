@@ -7,9 +7,11 @@ import android.support.design.widget.BottomNavigationView;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.AppCompatActivity;
 import android.view.MenuItem;
+import android.widget.Toast;
 
 public class MainActivity extends AppCompatActivity implements SettingFragment.OnFragmentInteractionListener, ChatFragment.OnFragmentInteractionListener {
-
+    protected static Account account;
+    protected static boolean isLogin=false;
     private ChatFragment chatFragment;
     private SettingFragment settingFragment;
     private BottomNavigationView.OnNavigationItemSelectedListener mOnNavigationItemSelectedListener
@@ -61,5 +63,6 @@ public class MainActivity extends AppCompatActivity implements SettingFragment.O
         chatFragment = new ChatFragment();
         transaction.replace(R.id.content, chatFragment);
         transaction.commit();
+
     }
 }

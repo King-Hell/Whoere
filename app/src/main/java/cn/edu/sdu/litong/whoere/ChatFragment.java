@@ -4,9 +4,18 @@ import android.content.Context;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.LinearLayout;
+import android.widget.ListView;
+
+import java.util.ArrayList;
+import java.util.List;
 
 
 /**
@@ -28,6 +37,12 @@ public class ChatFragment extends Fragment {
     private String mParam2;
 
     private OnFragmentInteractionListener mListener;
+
+    private List<Msg> msgList=new ArrayList<>();
+    private EditText inputText;
+    private Button send;
+    private RecyclerView msgRecyclerView;
+    private MsgAdapter adapter;
 
     public ChatFragment() {
         // Required empty public constructor
@@ -64,7 +79,28 @@ public class ChatFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_chat, container, false);
+        View view=inflater.inflate(R.layout.fragment_chat, container, false);
+        inputText=(EditText)view.findViewById(R.id.input_text);
+        send=(Button)view.findViewById(R.id.send);
+        msgRecyclerView=(RecyclerView)view.findViewById(R.id.msg_recycler_view);
+        LinearLayoutManager layoutManager=new LinearLayoutManager(getContext());
+        msgRecyclerView.setLayoutManager(layoutManager);
+        adapter=new MsgAdapter(msgList);
+        msgRecyclerView.setAdapter(adapter);
+        send.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View v){
+                String content=inputText.getText().toString();
+                if(!"".equals(content)){
+                    Msg msg=new Msg(content,Msg.TYPE_SENT);
+                    msgList.add(msg);
+                    adapter.notifyItemChanged(msgList.size()-1);
+                    msgRecyclerView.scrollToPosition(msgList.size()-1);
+                    inputText.setText("");
+                }
+            }
+        });
+        return view;
     }
 
     // TODO: Rename method, update argument and hook method into UI event
@@ -105,4 +141,5 @@ public class ChatFragment extends Fragment {
         // TODO: Update argument type and name
         void onFragmentInteraction(Uri uri);
     }
+
 }
