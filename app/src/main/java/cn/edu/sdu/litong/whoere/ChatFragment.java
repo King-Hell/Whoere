@@ -1,9 +1,15 @@
 package cn.edu.sdu.litong.whoere;
 
 import android.content.Context;
+import android.content.DialogInterface;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
+import android.preference.DialogPreference;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.NotificationCompat;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
@@ -13,7 +19,16 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.TextView;
+import android.widget.Toast;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,7 +41,7 @@ import java.util.List;
  * Use the {@link ChatFragment#newInstance} factory method to
  * create an instance of this fragment.
  */
-public class ChatFragment extends Fragment {
+public class ChatFragment extends Fragment implements Runnable {
     // TODO: Rename parameter arguments, choose names that match
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
     private static final String ARG_PARAM1 = "param1";
@@ -38,11 +53,37 @@ public class ChatFragment extends Fragment {
 
     private OnFragmentInteractionListener mListener;
 
-    private List<Msg> msgList=new ArrayList<>();
+    private List<Msg> msgList = new ArrayList<>();
     private EditText inputText;
     private Button send;
     private RecyclerView msgRecyclerView;
     private MsgAdapter adapter;
+
+    private Socket socket = null;
+    private BufferedReader in = null;
+    private PrintWriter out = null;
+
+
+    private Handler mHandler = new Handler() {
+        public void handleMessage(Message message) {
+            super.handleMessage(message);
+            String data = (String) message.obj;
+            String[] text = null;
+            if (data.indexOf(0) == '@') {
+                text = data.split("@");
+                Msg msg = null;
+                if (text[1].equals("SYSTEM")) {
+                    msg = new Msg(text[2], Msg.TYPE_SYSTEM, text[1]);
+                } else {
+                    msg = new Msg(text[2], Msg.TYPE_RECEIVED, text[1]);
+                }
+                msgList.add(msg);
+                adapter.notifyItemChanged(msgList.size() - 1);
+                msgRecyclerView.scrollToPosition(msgList.size() - 1);
+            }
+
+        }
+    };
 
     public ChatFragment() {
         // Required empty public constructor
@@ -79,31 +120,82 @@ public class ChatFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
-        View view=inflater.inflate(R.layout.fragment_chat, container, false);
-        inputText=(EditText)view.findViewById(R.id.input_text);
-        send=(Button)view.findViewById(R.id.send);
-        msgRecyclerView=(RecyclerView)view.findViewById(R.id.msg_recycler_view);
-        LinearLayoutManager layoutManager=new LinearLayoutManager(getContext());
+        View view = inflater.inflate(R.layout.fragment_chat, container, false);
+        //initMsgs();测试用
+        inputText = (EditText) view.findViewById(R.id.input_text);
+        send = (Button) view.findViewById(R.id.send);
+        msgRecyclerView = (RecyclerView) view.findViewById(R.id.msg_recycler_view);
+
+
+        LinearLayoutManager layoutManager = new LinearLayoutManager(getContext());
         msgRecyclerView.setLayoutManager(layoutManager);
-        adapter=new MsgAdapter(msgList);
+        adapter = new MsgAdapter(msgList);
         msgRecyclerView.setAdapter(adapter);
-        send.setOnClickListener(new View.OnClickListener(){
+        send.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v){
-                String content=inputText.getText().toString();
-                if(!"".equals(content)){
-                    Msg msg=new Msg(content,Msg.TYPE_SENT);
+            public void onClick(View v) {
+
+                String content = inputText.getText().toString();
+                if (!"".equals(content)) {
+                    Msg msg = new Msg(content, Msg.TYPE_SENT, MainActivity.account.getUsername());
                     msgList.add(msg);
-                    adapter.notifyItemChanged(msgList.size()-1);
-                    msgRecyclerView.scrollToPosition(msgList.size()-1);
+                    adapter.notifyItemChanged(msgList.size() - 1);
+                    msgRecyclerView.scrollToPosition(msgList.size() - 1);
                     inputText.setText("");
+                    if (socket.isConnected()) {
+                        if (!socket.isOutputShutdown()) {
+                            out.println(content);
+                        }
+                    }
                 }
             }
         });
+        new Thread(this).start();
         return view;
     }
 
+    //测试用====================================================
+    /*private void initMsgs(){
+        Msg msg1=new Msg("欢迎进入聊天室",Msg.TYPE_RECEIVED);
+        msgList.add(msg1);
+        Msg msg2=new Msg("大家好",Msg.TYPE_SENT);
+        msgList.add(msg2);
+    }*/
     // TODO: Rename method, update argument and hook method into UI event
+    private void connection() {
+        try {
+            socket = MainActivity.socket;
+            in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())), true);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void run() {
+        connection();
+        try {
+            while (true) {
+                if (!socket.isClosed()) {
+                    if (socket.isConnected()) {
+                        if (!socket.isInputShutdown()) {
+                            String getLine;
+                            if ((getLine = in.readLine()) != null) {
+                                Message message = new Message();
+                                message.obj = getLine;
+                                mHandler.sendMessage(message);
+
+
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     public void onButtonPressed(Uri uri) {
         if (mListener != null) {
             mListener.onFragmentInteraction(uri);

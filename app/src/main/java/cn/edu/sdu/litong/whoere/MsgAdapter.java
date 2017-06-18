@@ -7,6 +7,8 @@ import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import org.w3c.dom.Text;
+
 import java.util.List;
 
 /**
@@ -20,12 +22,18 @@ public class MsgAdapter extends RecyclerView.Adapter<MsgAdapter.ViewHolder> {
         LinearLayout rightLayout;
         TextView leftMsg;
         TextView rightMsg;
+        TextView leftName;
+        TextView rightName;
+        TextView systemMsg;
         public ViewHolder(View view){
             super(view);
             leftLayout=(LinearLayout)view.findViewById(R.id.left_layout);
             rightLayout=(LinearLayout)view.findViewById(R.id.right_layout);
             leftMsg=(TextView)view.findViewById(R.id.left_msg);
             rightMsg=(TextView)view.findViewById(R.id.right_msg);
+            leftName=(TextView)view.findViewById(R.id.left_name);
+            rightName=(TextView)view.findViewById(R.id.right_name);
+            systemMsg=(TextView)view.findViewById(R.id.system_message);
         }
     }
     public MsgAdapter(List<Msg> msgList){
@@ -42,11 +50,19 @@ public class MsgAdapter extends RecyclerView.Adapter<MsgAdapter.ViewHolder> {
         if(msg.getType()==Msg.TYPE_RECEIVED){
             holder.leftLayout.setVisibility(View.VISIBLE);
             holder.rightLayout.setVisibility(View.GONE);
+            holder.systemMsg.setVisibility(View.GONE);
             holder.leftMsg.setText(msg.getContent());
+            holder.leftName.setText(msg.getUsername());
         }else if(msg.getType()==Msg.TYPE_SENT){
             holder.rightLayout.setVisibility(View.VISIBLE);
             holder.leftLayout.setVisibility(View.GONE);
-            holder.leftMsg.setText(msg.getContent());
+            holder.systemMsg.setVisibility(View.GONE);
+            holder.rightMsg.setText(msg.getContent());
+            holder.rightName.setText(msg.getUsername());
+        }else if(msg.getType()==Msg.TYPE_SYSTEM){
+            holder.leftLayout.setVisibility(View.GONE);
+            holder.rightLayout.setVisibility(View.GONE);
+            holder.systemMsg.setText(msg.getContent());
         }
     }
     @Override
