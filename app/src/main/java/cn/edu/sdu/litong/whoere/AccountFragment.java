@@ -39,7 +39,7 @@ import java.util.Map;
  * Use the {@link AccountFragment#newInstance} factory method to
  * create an instance of this fragment.
  */
-public class AccountFragment extends Fragment {
+public class AccountFragment extends Fragment implements Runnable {
     // TODO: Rename parameter arguments, choose names that match
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
     private static final String ARG_PARAM1 = "param1";
@@ -103,32 +103,29 @@ public class AccountFragment extends Fragment {
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                new Thread(){
-                    @Override
-                    public void run() {
-                        try {
-                            socket = MainActivity.socket;
-                            in = new ObjectInputStream(new BufferedInputStream(socket.getInputStream()));
-                            out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())), true);
-                            out.println("REQUEST_LOCATION");
-                            out.flush();
-                            listmaps=(ArrayList<Map<String,String>>)in.readObject();
-                            adapter.notifyDataSetChanged();
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
-                    }
-                }.start();
+                new Thread(AccountFragment.this).start();
             }
         });
 
         accountList=(ListView)view.findViewById(R.id.account_list);
         adapter=new SimpleAdapter(getContext(),listmaps,android.R.layout.simple_list_item_2,new String[]{"first","second"},new int[]{android.R.id.text1,android.R.id.text2});
         accountList.setAdapter(adapter);
-
+        new Thread(this).start();
         return view;
     }
-
+    public void run() {
+        try {
+            socket = MainActivity.socket;
+            in = new ObjectInputStream(new BufferedInputStream(socket.getInputStream()));
+            out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())), true);
+            out.println("REQUEST_LOCATION");
+            out.flush();
+            listmaps=(ArrayList<Map<String,String>>)in.readObject();
+            adapter.notifyDataSetChanged();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
     // TODO: Rename method, update argument and hook method into UI event
     public void onButtonPressed(Uri uri) {
         if (mListener != null) {
