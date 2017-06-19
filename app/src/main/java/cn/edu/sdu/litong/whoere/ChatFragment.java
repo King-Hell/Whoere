@@ -69,7 +69,7 @@ public class ChatFragment extends Fragment implements Runnable {
             super.handleMessage(message);
             String data = (String) message.obj;
             String[] text = null;
-            if (data.indexOf(0) == '@') {
+            if (data.charAt(0) == '@') {
                 text = data.split("@");
                 Msg msg = null;
                 if (text[1].equals("SYSTEM")) {
