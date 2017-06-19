@@ -110,7 +110,6 @@ public class AccountFragment extends Fragment implements Runnable {
         accountList=(ListView)view.findViewById(R.id.account_list);
         adapter=new SimpleAdapter(getContext(),listmaps,android.R.layout.simple_list_item_2,new String[]{"first","second"},new int[]{android.R.id.text1,android.R.id.text2});
         accountList.setAdapter(adapter);
-        new Thread(this).start();
         return view;
     }
     public void run() {
