@@ -1,5 +1,8 @@
 package cn.edu.sdu.litong.whoere;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
 /**
  * Created by hasee on 2017/5/2.
  */
@@ -19,7 +22,11 @@ public class Msg {
     public String getContent(){
         return content;
     }
-    public String getUsername(){return username;}
+    public String getUsername(){
+        Date date=new Date();
+        SimpleDateFormat dateFormat=new SimpleDateFormat("HH:mm:ss");
+        String time=dateFormat.format(date);
+        return username+"  "+time;}
     public int getType(){
         return type;
     }

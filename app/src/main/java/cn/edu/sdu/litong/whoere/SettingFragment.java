@@ -9,6 +9,7 @@ import android.os.Looper;
 import android.os.Message;
 import android.support.v4.app.Fragment;
 import android.support.v7.app.AlertDialog;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -70,9 +71,10 @@ public class SettingFragment extends Fragment {
     private Handler mHandler=new Handler(){
         public void handleMessage(Message msg){
             super.handleMessage(msg);
-            Toast.makeText(getContext(),(String)msg.obj,Toast.LENGTH_LONG);
+            Toast.makeText(getActivity(),(String)msg.obj,Toast.LENGTH_SHORT).show();
         }
     };
+
 
     public SettingFragment() {
         // Required empty public constructor
@@ -121,6 +123,7 @@ public class SettingFragment extends Fragment {
         buttonRegister.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View v){
+
                 LayoutInflater inflater2 = getLayoutInflater(savedInstanceState);
                 View dialog = inflater2.inflate(R.layout.register, (ViewGroup) v.findViewById(R.id.register));
                 rUsername = (TextView) dialog.findViewById(R.id.rUsername);
@@ -134,7 +137,7 @@ public class SettingFragment extends Fragment {
 
 
                                 if (!rPassword.getText().toString().equals(rPassword2.getText().toString())) {
-                                    Toast.makeText(getContext(), "两次密码不同，请重新输入", Toast.LENGTH_LONG);
+                                    Toast.makeText(getContext(), "两次密码不同，请重新输入", Toast.LENGTH_LONG).show();
                                 }else{
                                     register(rUsername.getText().toString(),rPassword.getText().toString());
                                 }
@@ -154,11 +157,31 @@ public class SettingFragment extends Fragment {
         buttonLogout.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                out.println("BYE");
-                MainActivity.isLogin = false;
-                buttonLogout.setEnabled(false);
-                buttonLogin.setEnabled(true);
-                buttonRegister.setEnabled(true);
+                new Thread(){
+                    public void run(){
+                        try {
+                            out.println("BYE");
+                            out.flush();
+                            MainActivity.isLogin = false;
+                        }catch (Exception e){
+                            e.printStackTrace();
+                        }
+                        if(!MainActivity.isLogin){
+                            mHandler.post(new Runnable() {
+                                @Override
+                                public void run() {
+                                    buttonLogout.setEnabled(false);
+                                    buttonLogin.setEnabled(true);
+                                    buttonRegister.setEnabled(true);
+                                }
+                            });
+                        }
+                    }
+
+                }.start();
+
+
+
             }
         });
         buttonLogin.setOnClickListener(new View.OnClickListener() {
@@ -184,7 +207,7 @@ public class SettingFragment extends Fragment {
                             while ((data = in.readLine()) != null) {
                                 if (data.equals("LOGIN_YES")) {
                                     Message message=new Message();
-                                    message.obj="连接成功";
+                                    message.obj="正在连接服务器……";
                                     mHandler.sendMessage(message);
                                     //Toast.makeText(getContext(), "连接成功", Toast.LENGTH_LONG).show();
                                     os = new ObjectOutputStream(socket.getOutputStream());
@@ -195,7 +218,9 @@ public class SettingFragment extends Fragment {
                                     break;
                                 }
                             }
+
                             while ((data = in.readLine()) != null) {
+
                                 if (data.equals("ACCOUNT_YES")) {
                                     Message message=new Message();
                                     message.obj="登录成功";
@@ -213,20 +238,27 @@ public class SettingFragment extends Fragment {
                                     mHandler.sendMessage(message);
                                   //  Toast.makeText(getContext(), "网络错误，登录失败", Toast.LENGTH_LONG).show();
                                 }
+                                break;
                             }
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
+                        if (MainActivity.isLogin) {
+                            mHandler.post(new Runnable() {
+                                @Override
+                                public void run() {
+                                    buttonLogout.setEnabled(true);
+                                    buttonLogin.setEnabled(false);
+                                    buttonRegister.setEnabled(false);
+                                }
+                            });
 
+                        }
                     }
 
                 }.start();
 
-                if (MainActivity.isLogin == true) {
-                    buttonLogout.setEnabled(true);
-                    buttonLogin.setEnabled(false);
-                    buttonRegister.setEnabled(false);
-                }
+
 
             }
         });
@@ -242,7 +274,7 @@ public class SettingFragment extends Fragment {
     public void register(final String username,final String password){
         new Thread() {
             public void run() {
-                Looper.prepare();
+
                 try {
                     socket = new Socket("118.89.240.19", 49400);
                     MainActivity.socket = socket;
@@ -264,21 +296,33 @@ public class SettingFragment extends Fragment {
                     }
                     while ((data = in.readLine()) != null) {
                         if (data.equals("REGISTER_YES")) {
-                            Toast.makeText(getContext(), "账户创建成功", Toast.LENGTH_LONG).show();
+                            Message message=new Message();
+                            message.obj="账户创建成功";
+                            mHandler.sendMessage(message);
+                            //Toast.makeText(getContext(), "账户创建成功", Toast.LENGTH_LONG).show();
 
                         } else if (data.equals("REGISTER_NO")) {
-                            Toast.makeText(getContext(), "账户创建失败", Toast.LENGTH_LONG).show();
+                            Message message=new Message();
+                            message.obj="账户创建失败";
+                            mHandler.sendMessage(message);
+                            //Toast.makeText(getContext(), "账户创建失败", Toast.LENGTH_LONG).show();
                         }else if(data.equals("REGISTER_EXIST")){
-                            Toast.makeText(getContext(), "该账户已存在，注册失败", Toast.LENGTH_LONG).show();
+                            Message message=new Message();
+                            message.obj="该账户已存在，注册失败";
+                            mHandler.sendMessage(message);
+                            //Toast.makeText(getContext(), "该账户已存在，注册失败", Toast.LENGTH_LONG).show();
                         }
                         else {
-                            Toast.makeText(getContext(), "网络错误，注册失败", Toast.LENGTH_LONG).show();
+                            Message message=new Message();
+                            message.obj="网络错误，注册失败";
+                            mHandler.sendMessage(message);
+                            //Toast.makeText(getContext(), "网络错误，注册失败", Toast.LENGTH_LONG).show();
                         }
                     }
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-                Looper.loop();
+
             }
 
         }.start();
@@ -292,6 +336,14 @@ public class SettingFragment extends Fragment {
             throw new RuntimeException(context.toString()
                     + " must implement OnFragmentInteractionListener");
         }
+        if(MainActivity.isLogin){
+            buttonLogout.setEnabled(true);
+            buttonLogin.setEnabled(false);
+            buttonRegister.setEnabled(false);
+        }
+        MainActivity mActivity=(MainActivity)context;
+        mActivity.setHandler(mHandler);
+
     }
 
     @Override

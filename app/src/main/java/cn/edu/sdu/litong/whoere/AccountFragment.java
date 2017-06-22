@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.support.v4.content.ContextCompat;
@@ -16,6 +17,7 @@ import android.widget.Button;
 import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.SimpleAdapter;
+import android.widget.Toast;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
@@ -54,7 +56,7 @@ public class AccountFragment extends Fragment implements Runnable {
     private ListView accountList=null;
     private ArrayList<String> data = new ArrayList<String>();
     private SimpleAdapter adapter;
-    ArrayList<Map<String,String>> listmaps=new ArrayList<Map<String,String>>();
+    ArrayList<HashMap<String, String>> list=new  ArrayList<HashMap<String, String>>();
 
     private Button button=null;
 
@@ -62,6 +64,7 @@ public class AccountFragment extends Fragment implements Runnable {
     private ObjectInputStream in = null;
     private PrintWriter out = null;
 
+    Handler mHandler=new Handler();
     public AccountFragment() {
         // Required empty public constructor
     }
@@ -103,24 +106,42 @@ public class AccountFragment extends Fragment implements Runnable {
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+
                 new Thread(AccountFragment.this).start();
+
+
             }
         });
 
         accountList=(ListView)view.findViewById(R.id.account_list);
-        adapter=new SimpleAdapter(getContext(),listmaps,android.R.layout.simple_list_item_2,new String[]{"first","second"},new int[]{android.R.id.text1,android.R.id.text2});
+        adapter=new SimpleAdapter(getActivity(),list,android.R.layout.simple_list_item_2,new String[]{"1","2"},new int[]{android.R.id.text1,android.R.id.text2});
         accountList.setAdapter(adapter);
         return view;
     }
     public void run() {
         try {
             socket = MainActivity.socket;
-            in = new ObjectInputStream(new BufferedInputStream(socket.getInputStream()));
             out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())), true);
             out.println("REQUEST_LOCATION");
             out.flush();
-            listmaps=(ArrayList<Map<String,String>>)in.readObject();
-            adapter.notifyDataSetChanged();
+            in = new ObjectInputStream(new BufferedInputStream(socket.getInputStream()));
+            Object object=null;
+            while((object=in.readObject())!=null){
+                ArrayList<HashMap<String, String>> list=(ArrayList<HashMap<String,String>>)object;
+            }
+//            listmaps=(ArrayList<Map<String,String>>)in.readObject();
+//            Map<String,String> map=new HashMap<String, String>();
+//            map.put("1","123");
+//            map.put("2","123");
+            //listmaps.add(map);
+            mHandler.post(new Runnable() {
+                @Override
+                public void run() {
+                    Toast.makeText(getActivity(),"正在获取数据……",Toast.LENGTH_SHORT).show();
+                    adapter.notifyDataSetChanged();
+                }
+            });
+
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -141,6 +162,8 @@ public class AccountFragment extends Fragment implements Runnable {
             throw new RuntimeException(context.toString()
                     + " must implement OnFragmentInteractionListener");
         }
+        MainActivity activity=(MainActivity)context;
+        activity.setHandler(mHandler);
     }
 
     @Override

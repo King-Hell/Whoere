@@ -67,13 +67,14 @@ public class ChatFragment extends Fragment implements Runnable {
     private Handler mHandler = new Handler() {
         public void handleMessage(Message message) {
             super.handleMessage(message);
+            Toast.makeText(getActivity(),"有新消息",Toast.LENGTH_SHORT).show();
             String data = (String) message.obj;
             String[] text = null;
             if (data.charAt(0) == '@') {
                 text = data.split("@");
                 Msg msg = null;
                 if (text[1].equals("SYSTEM")) {
-                    msg = new Msg(text[2], Msg.TYPE_SYSTEM, text[1]);
+                    msg = new Msg("系统消息："+text[2], Msg.TYPE_SYSTEM, text[1]);
                 } else {
                     msg = new Msg(text[2], Msg.TYPE_RECEIVED, text[1]);
                 }
@@ -165,8 +166,8 @@ public class ChatFragment extends Fragment implements Runnable {
     private void connection() {
         try {
             socket = MainActivity.socket;
-            in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())), true);
+            in = new BufferedReader(new InputStreamReader(socket.getInputStream(),"UTF-8"));
+            out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream(),"UTF-8")), true);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -179,10 +180,10 @@ public class ChatFragment extends Fragment implements Runnable {
                 if (!socket.isClosed()) {
                     if (socket.isConnected()) {
                         if (!socket.isInputShutdown()) {
-                            String getLine;
-                            if ((getLine = in.readLine()) != null) {
+                            String data;
+                            if ((data = in.readLine()) != null) {
                                 Message message = new Message();
-                                message.obj = getLine;
+                                message.obj = data;
                                 mHandler.sendMessage(message);
 
 
@@ -211,6 +212,8 @@ public class ChatFragment extends Fragment implements Runnable {
             throw new RuntimeException(context.toString()
                     + " must implement OnFragmentInteractionListener");
         }
+        MainActivity mainActivity=(MainActivity)context;
+        mainActivity.setHandler(mHandler);
     }
 
     @Override

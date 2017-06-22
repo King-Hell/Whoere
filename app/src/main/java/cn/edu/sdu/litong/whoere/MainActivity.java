@@ -4,6 +4,8 @@ import android.Manifest;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
 import android.support.v4.app.ActivityCompat;
@@ -29,14 +31,16 @@ import java.net.Socket;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-public class MainActivity extends AppCompatActivity implements SettingFragment.OnFragmentInteractionListener, ChatFragment.OnFragmentInteractionListener, AMapLocationListener {
+public class MainActivity extends AppCompatActivity implements SettingFragment.OnFragmentInteractionListener, ChatFragment.OnFragmentInteractionListener, AMapLocationListener,AccountFragment.OnFragmentInteractionListener {
     protected static Account account;
     protected static boolean isLogin = false;
     protected static Socket socket = null;
 
+
     private PrintWriter out = null;
     private ChatFragment chatFragment;
     private SettingFragment settingFragment;
+    private AccountFragment accountFragment;
 
     String locationInfo=null;
 
@@ -51,6 +55,8 @@ public class MainActivity extends AppCompatActivity implements SettingFragment.O
     final int LOCATION_BS = 6;
     final int LOCATION_OFFLINE = 8;
 
+    private Handler mHandler;
+
     private BottomNavigationView.OnNavigationItemSelectedListener mOnNavigationItemSelectedListener
             = new BottomNavigationView.OnNavigationItemSelectedListener() {
 
@@ -58,8 +64,8 @@ public class MainActivity extends AppCompatActivity implements SettingFragment.O
         public boolean onNavigationItemSelected(@NonNull MenuItem item) {
             switch (item.getItemId()) {
                 case R.id.navigation_chat:
-                    if (isLogin = false) {
-                        Toast.makeText(getApplicationContext(), "请先登录", Toast.LENGTH_SHORT).show();
+                    if (isLogin == false) {
+                        Toast.makeText(MainActivity.this, "请先登录", Toast.LENGTH_SHORT).show();
                         return false;
                     }
                     if (chatFragment == null) {
@@ -67,9 +73,19 @@ public class MainActivity extends AppCompatActivity implements SettingFragment.O
                     }
                     getSupportFragmentManager().beginTransaction().replace(R.id.content, chatFragment).commit();
                     return true;
-                case R.id.navigation_people:
 
-                    return true;
+                case R.id.navigation_people:
+                    if (isLogin ==false) {
+                        Toast.makeText(MainActivity.this, "请先登录", Toast.LENGTH_SHORT).show();
+                        return false;
+                    }
+                        if (accountFragment == null) {
+                            accountFragment = new AccountFragment();
+                        }
+                        getSupportFragmentManager().beginTransaction().replace(R.id.content, accountFragment).commit();
+                        return true;
+
+
                 case R.id.navigation_launch:
                     if (settingFragment == null) {
                         settingFragment = new SettingFragment();
@@ -82,7 +98,9 @@ public class MainActivity extends AppCompatActivity implements SettingFragment.O
 
     };
 
-
+    public void setHandler(Handler handler){
+        mHandler=handler;
+    }
     public void onFragmentInteraction(Uri uri) {
 
     }
@@ -118,7 +136,9 @@ public class MainActivity extends AppCompatActivity implements SettingFragment.O
         //初始化AMapLocationClientOption对象
         mLocationOption = new AMapLocationClientOption();
         mLocationOption.setLocationMode(AMapLocationClientOption.AMapLocationMode.Hight_Accuracy);
+
         mLocationOption.setInterval(10000);
+        mLocationClient.setLocationOption(mLocationOption);
         mLocationClient.startLocation();
 
 
@@ -171,6 +191,7 @@ public class MainActivity extends AppCompatActivity implements SettingFragment.O
 
                                 out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())), true);
                                 out.println("$"+locationInfo);
+                                mLocationClient.stopLocation();
                             } catch (Exception e) {
                                 e.printStackTrace();
                             }
